@@ -1,6 +1,6 @@
 # claude-skills
 
-Personal [Claude Code](https://claude.ai/code) skills plugin — git workflow helpers that enforce clean commit history and meaningful commit messages.
+Personal [Claude Code](https://claude.ai/code) skills plugin — git workflow helpers that enforce clean commit history, meaningful commit messages, and isolated worktrees.
 
 ## Why
 
@@ -28,6 +28,17 @@ Squashes all commits on the current branch (since diverging from the base branch
 - Requires a force-push if the branch was already pushed.
 
 Trigger: ask Claude to "squash this branch", "clean up my commits before merge", or invoke `/squash-to-main`.
+
+### `create-worktree`
+
+Creates a new git worktree as a sibling directory under the repository root, on a branch prefixed with the project's commit type (`feat/…`, `fix/…`, `docs/…`).
+
+- Detects the repository root from the git common dir (bare-repo layout with side-by-side worktrees).
+- Derives a kebab-case slug for the folder and a `type/slug` branch name from the task.
+- Guards against existing branches/paths and branches from the repo's default branch.
+- Avoids native worktree helpers that bury worktrees under `.claude/` and mangle branch names.
+
+Trigger: ask Claude to "create a worktree", "start a branch in a worktree", or "spin up a worktree for X".
 
 ## Installation
 
@@ -63,9 +74,10 @@ Then run `claude plugin install user-skills@claude-skills` on each new machine.
 
 ## Usage
 
-Both skills are invoked automatically when Claude detects the intent, or explicitly via slash commands:
+All skills are invoked automatically when Claude detects the intent, or explicitly via slash commands:
 
 ```
 /commit-message     — stage your changes first, then invoke
 /squash-to-main     — run from the feature branch you want to squash
+/create-worktree    — run from anywhere in the repo; describe the work to create the branch
 ```
