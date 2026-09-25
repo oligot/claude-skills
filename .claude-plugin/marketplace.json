@@ -1,13 +1,13 @@
 {
   "name": "claude-skills",
   "owner": { "name": "Olivier Ligot" },
-  "metadata": { "description": "Personal Claude Code skills", "version": "1.0.0" },
+  "metadata": { "description": "Personal Claude Code skills", "version": "1.0.1" },
   "plugins": [
     {
       "name": "user-skills",
       "source": { "source": "url", "url": "https://github.com/oligot/claude-skills.git" },
       "description": "Personal Claude Code skills",
-      "version": "1.0.0"
+      "version": "1.0.1"
     }
   ]
 }
