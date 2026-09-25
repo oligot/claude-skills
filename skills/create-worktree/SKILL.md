@@ -48,10 +48,25 @@ This assumes the **bare-repo layout**: a `.bare` (or `.git`) common dir whose pa
    BASE=${BASE:-main}
    ```
 
-6. **Create the worktree on a new branch:**
+6. **Create the worktree on a new branch.** Prefer [workmux](https://workmux.raine.dev): it also opens a tmux window for the worktree and registers it for agent status tracking. Its global config (`worktree_dir: ..`, `worktree_naming: basename`) yields exactly `$ROOT/$SLUG`. Fall back to plain git when workmux is absent:
    ```bash
-   git worktree add "$ROOT/$SLUG" -b "$TYPE/$SLUG" "$BASE"
+   # workmux must run from inside a worktree: it rejects the bare-repo root
+   # ($ROOT itself, whose .git points at .bare and has no commondir).
+   WM_DIR=$PWD
+   [ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" = true ] || WM_DIR="$ROOT/main"
+   if command -v workmux >/dev/null 2>&1 && [ -d "$WM_DIR" ]; then
+     # One tmux session per project, named after $ROOT (same rule as
+     # tmux-sessionizer: "." -> "_"). Without --parent-session workmux puts the
+     # window in whatever session this shell runs in, so a plan touching three
+     # repos piles all its windows into one session.
+     SESSION=$(basename "$ROOT" | tr . _)
+     tmux has-session -t "=$SESSION" 2>/dev/null || tmux new-session -ds "$SESSION" -c "$ROOT"
+     (cd "$WM_DIR" && workmux add "$TYPE/$SLUG" --base "$BASE" -b --parent-session "$SESSION")
+   else
+     git worktree add "$ROOT/$SLUG" -b "$TYPE/$SLUG" "$BASE"
+   fi
    ```
+   `-b` creates the window in the background so the current pane keeps focus. `--parent-session` targets the project's session rather than the current one; the window is created there even when you are working from another project's session.
 
 7. **Report** the created path and branch, then run all subsequent work against `"$ROOT/$SLUG"` (use `git -C "$ROOT/$SLUG" …` or treat it as the new working directory). Confirm with `git worktree list`.
 
@@ -59,4 +74,4 @@ This assumes the **bare-repo layout**: a `.bare` (or `.git`) common dir whose pa
 
 - Branch the worktree from `$BASE` to start from the project's mainline. To start from current local HEAD instead, replace `"$BASE"` with `HEAD`; to start from the freshest remote state, `git fetch` first and use `"origin/$BASE"`.
 - Do **not** use a native `EnterWorktree`/`--worktree` helper here — those place worktrees under `.claude/worktrees/` and sanitise `/` out of branch names, which breaks both the root-path convention and the `type/SLUG` branch name.
-- To remove a worktree later: `git worktree remove "$ROOT/$SLUG"` (this keeps the branch). Use `git worktree move <old> <new>` to relocate one without losing commits — never delete the branch to "move" it.
+- To remove a worktree later: `workmux remove "$SLUG"` if it was created by workmux (also closes its tmux window), otherwise `git worktree remove "$ROOT/$SLUG"`. Both keep the branch. Use `git worktree move <old> <new>` to relocate one without losing commits — never delete the branch to "move" it.
